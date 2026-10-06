@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<link rel="manifest" href="manifest.webmanifest">
+<title>My Daily System</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#111827;background:#f7f7f8}
+*{box-sizing:border-box}body{margin:0}.app{max-width:720px;margin:auto;padding:18px 14px 40px}
+.card{background:white;border:1px solid #ddd;border-radius:16px;padding:16px;margin:12px 0}
+h1{font-size:25px;margin:0 0 4px}h2{font-size:18px;margin:0 0 12px}p{color:#5f6368}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button,label{font-size:16px}label.option{display:flex;align-items:center;gap:10px;border:1px solid #ddd;border-radius:12px;padding:13px;min-height:50px;background:#fafafa}
+label.option:has(input:checked){border-color:#111827;background:#eef0f3}
+input[type=radio],input[type=checkbox]{width:20px;height:20px}input[type=text],textarea{width:100%;padding:12px;border:1px solid #ccc;border-radius:10px;font-size:16px;margin-top:6px}
+.field{margin:10px 0}.routine{padding:14px;background:#f3f4f6;border-radius:12px;line-height:1.6}
+.actions{display:flex;gap:10px;flex-wrap:wrap}button{border:0;border-radius:10px;padding:13px 18px;background:#111827;color:white;cursor:pointer}button.secondary{background:white;color:#111827;border:1px solid #ccc}
+.small{font-size:14px;color:#666}@media(max-width:480px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<h1>My Daily System</h1>
+<p>Flexible daily operating system — not a rigid timetable.</p>
+
+<form id="app">
+<section class="card">
+<h2>1. Today's mode</h2>
+<div class="grid">
+<label class="option"><input type="radio" name="mode" value="normal" checked> 🟢 Normal</label>
+<label class="option"><input type="radio" name="mode" value="busy"> 🟡 Busy</label>
+<label class="option"><input type="radio" name="mode" value="travel"> 🔵 Travel</label>
+<label class="option"><input type="radio" name="mode" value="low"> 🔴 Low energy</label>
+</div>
+</section>
+
+<section class="card">
+<h2>2. Today's priorities</h2>
+<div class="field">MUST DO<input type="text" id="must" placeholder="The one thing that must happen"></div>
+<div class="field">SHOULD DO<input type="text" id="should" placeholder="Important if possible"></div>
+<div class="field">CAN WAIT<input type="text" id="wait" placeholder="Optional tasks"></div>
+</section>
+
+<section class="card">
+<h2>3. Today's routine</h2>
+<div class="routine" id="routine"></div>
+</section>
+
+<section class="card">
+<h2>4. Today's anchors</h2>
+<label class="option"><input type="checkbox" id="exercise"> Morning movement / exercise</label><br>
+<label class="option"><input type="checkbox" id="food"> Proper meals</label><br>
+<label class="option"><input type="checkbox" id="work"> Priority work</label><br>
+<label class="option"><input type="checkbox" id="rest"> Rest / personal time</label><br>
+<label class="option"><input type="checkbox" id="sleep"> Protect sleep</label>
+</section>
+
+<section class="card">
+<h2>5. Food plan</h2>
+<div class="grid">
+<div class="field">Meal 1<input type="text" id="meal1" placeholder="e.g. porridge + egg"></div>
+<div class="field">Main meal<input type="text" id="meal2" placeholder="e.g. rice + fish + soup"></div>
+<div class="field">Evening meal<input type="text" id="meal3" placeholder="e.g. plantain + egg"></div>
+</div>
+<p class="small">Meal timing stays flexible.</p>
+</section>
+
+<section class="card">
+<h2>6. Evening review</h2>
+<textarea id="done" rows="3" placeholder="What did I accomplish today?"></textarea>
+<textarea id="lesson" rows="3" placeholder="What didn't work or what did I learn?"></textarea>
+<textarea id="tomorrow" rows="3" placeholder="What must happen tomorrow?"></textarea>
+</section>
+
+<div class="actions">
+<button type="button" id="save">Save today</button>
+<button type="button" class="secondary" id="newday">Start new day</button>
+</div>
+<p id="status" aria-live="polite"></p>
+</form>
+</div>
+
+<script>
+const plans={
+normal:"🌅 Morning: Go out before 5:00 AM → 45-minute walk + planned exercise → return before 6:00 AM.<br><br>🍽️ Food: Flexible meal windows using your normal foods.<br><br>💼 Work: Protect your MUST DO task.<br><br>🌙 Evening: Recover, prepare and protect sleep.",
+busy:"🟡 Busy mode: Use a shorter walk or short workout. Keep essential meals. Focus on MUST DO work and reduce optional tasks.",
+travel:"🔵 Travel mode: Move whenever practical instead of forcing the normal window. Keep meals reasonable, protect sleep and complete essential work.",
+low:"🔴 Low-energy mode: Minimum movement, simple nourishing meals, essential work only and extra recovery."
+};
+const keys=["must","should","wait","meal1","meal2","meal3","done","lesson","tomorrow","exercise","food","work","rest","sleep"];
+const modeEls=[...document.querySelectorAll('input[name=mode]')];
+function selectedMode(){return document.querySelector('input[name=mode]:checked').value}
+function render(){document.getElementById("routine").innerHTML=plans[selectedMode()]}
+function save(){
+ const data={mode:selectedMode()};
+ keys.forEach(k=>{const e=document.getElementById(k);data[k]=e.type==="checkbox"?e.checked:e.value});
+ localStorage.setItem("dailySystem",JSON.stringify(data));
+ document.getElementById("status").textContent="Today's plan saved on this device.";
+}
+function load(){
+ const raw=localStorage.getItem("dailySystem"); if(!raw){render();return}
+ const d=JSON.parse(raw);
+ modeEls.forEach(e=>e.checked=e.value===d.mode);
+ keys.forEach(k=>{const e=document.getElementById(k);if(e) e[e.type==="checkbox"?"checked":"value"]=d[k] ?? (e.type==="checkbox"?false:"")});
+ render();
+}
+modeEls.forEach(e=>e.addEventListener("change",render));
+document.getElementById("save").addEventListener("click",save);
+document.getElementById("newday").addEventListener("click",()=>{
+ document.getElementById("app").reset();modeEls[0].checked=true;render();
+ document.getElementById("status").textContent="New day started.";
+});
+load();
+</script>
+</body>
+</html>
